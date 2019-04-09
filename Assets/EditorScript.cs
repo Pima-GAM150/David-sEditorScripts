@@ -3,23 +3,27 @@ using UnityEditor;
 
 public class EditorScript : EditorWindow
 {
-    public Vector3 scale;
-
     public int index = 0;
     bool xBoolChecked = false;
     bool yBoolChecked = false;
     bool zBoolChecked = false;
     bool inverseRotate = false;
     int invertRotation = 1;
-    bool reset;
+    bool rotationReset;
     public int Rotate;
 
     public string[] options = new string[] { "15 Degrees", "30 Degrees", "45 Degrees", "60 Degrees", "75 Degrees", "90 Degrees" };
     float[] optionValues = new float[] { 15f, 30f, 45f, 60f, 75f, 90f };
-    public string[] scaleSetoptions = new string[] { "0.25", "0.5", "0.75", "1.5", "2", "5" };
-    float[] scaleSetOptionValues = new float[] { 0.25f, 0.5f, 0.75f, 1.5f, 2f, 5f, };
-    public string[] scaleMultiplyoptions = new string[] { "0.25", "0.5", "0.75", "1.5", "2", "5" };
-    float[] scaleMultiplyOptionValues = new float[] { 0.25f, 0.5f, 0.75f, 1.5f, 2f, 5f, };
+
+    public Vector3 scale;
+    public int setIndex = 0;
+    public int multIndex = 0;
+    bool scaleReset;
+
+    public string[] scaleSetOptions = new string[] { "0.25", "0.5", "0.75", "1.5", "2", "5" };
+    float[] scaleSetOptionValues = new float[] { 0.25f, 0.5f, 0.75f, 1.5f, 2f, 5f };
+    public string[] scaleMultiplyOptions = new string[] { "0.2", "0.5", "0.6667", "1.5", "2", "5" };
+    float[] scaleMultiplyOptionValues = new float[] { 1 / 5f, 1 / 2f, 1 / 1.5f, 1.5f, 2f, 5f };
 
     [MenuItem("Window/Object Manipulator")]
     public static void ShowWindow()
@@ -46,99 +50,42 @@ public class EditorScript : EditorWindow
         {
             RotationFunction();
         }
-        reset = GUILayout.Button("Reset Rotation");
-        if (reset)
+        rotationReset = GUILayout.Button("Reset Rotation");
+        if (rotationReset)
         {
             foreach (GameObject obj in Selection.gameObjects)
             {
-                obj.GetComponent<Transform>().rotation *= Quaternion.identity;
+                obj.GetComponent<Transform>().rotation = Quaternion.identity;
             }
         }
 
         GUILayout.Label("Scale the Selected Object", EditorStyles.boldLabel);
         scale = EditorGUILayout.Vector3Field("Scale", scale);
-        EditorGUILayout.Popup(index, scaleSetoptions);
-        EditorGUILayout.Popup(index, scaleMultiplyoptions);
-        EditorGUILayout.DropdownButton(new GUIContent("Setting Scale"), FocusType.Passive);
+        GUILayout.Label("Set the Scale of the Selected Object", EditorStyles.boldLabel);
+        setIndex = EditorGUILayout.Popup(setIndex, scaleSetOptions);
+        GUILayout.Label("Multiply the Scale of the Selected Object", EditorStyles.boldLabel);
+        multIndex = EditorGUILayout.Popup(multIndex, scaleMultiplyOptions);
 
-        if (GUILayout.Button("Reset Scale"))
+        if (GUILayout.Button("Set Scale"))
         {
-            scale = new Vector3(1f, 1f, 1f);
-            Scale();
+            SetScalingFunction();
         }
-        /*if (GUILayout.Button("Scale by 0.25"))
+        if (GUILayout.Button("Multiply Scale"))
         {
-            scale = new Vector3(0.25f, 0.25f, 0.25f);
-            Scale();
+            MultScalingFunction();
         }
-        if (GUILayout.Button("Scale by 0.5"))
+        scaleReset = GUILayout.Button("Reset Scale");
+        if (scaleReset)
         {
-            scale = new Vector3(0.5f, 0.5f, 0.5f);
-            Scale();
+            foreach (GameObject obj in Selection.gameObjects)
+            {
+                obj.GetComponent<Transform>().localScale = new Vector3(1f, 1f, 1f);
+            }
         }
-        if (GUILayout.Button("Scale by 0.75"))
-        {
-            scale = new Vector3(0.75f, 0.75f, 0.75f);
-            Scale();
-        }
-        if (GUILayout.Button("Scale by 1.5"))
-        {
-            scale = new Vector3(1.5f, 1.5f, 1.5f);
-            Scale();
-        }
-        if (GUILayout.Button("Scale by 2"))
-        {
-            scale = new Vector3(2f, 2f, 2f);
-            Scale();
-        }
-        if (GUILayout.Button("Scale by 5"))
-        {
-            scale = new Vector3(5f, 5f, 5f);
-            Scale();
-        }*/
-        if (GUILayout.Button("Set Scale to 0.25"))
-        {
-            scale = new Vector3(0.25f, 0.25f, 0.25f);
-            Scale();
-        }
-        if (GUILayout.Button("Set Scale to 0.5"))
-        {
-            scale = new Vector3(0.5f, 0.5f, 0.5f);
-            Scale();
-        }
-        if (GUILayout.Button("Set Scale to 0.75"))
-        {
-            scale = new Vector3(0.75f, 0.75f, 0.75f);
-            Scale();
-        }
-        if (GUILayout.Button("Set Scale to 1.5"))
-        {
-            scale = new Vector3(1.5f, 1.5f, 1.5f);
-            Scale();
-        }
-        if (GUILayout.Button("Set Scale to 2"))
-        {
-            scale = new Vector3(2f, 2f, 2f);
-            Scale();
-        }
-        if (GUILayout.Button("Set Scale to 5"))
-        {
-            scale = new Vector3(5f, 5f, 5f);
-            Scale();
-        }
-        if (GUILayout.Button("Apply Scale"))
-        {
-            Scale();
-        }
+
+
     }
 
-    void Scale()
-    {
-        foreach (GameObject obj in Selection.gameObjects)
-        {
-            obj.GetComponent<Transform>().localScale = scale;
-        }
-    }
     void RotationFunction()
     {
         Vector3 rotationToApply = new Vector3();
@@ -148,9 +95,25 @@ public class EditorScript : EditorWindow
 
         foreach (GameObject obj in Selection.gameObjects)
         {
-            obj.GetComponent<Transform>().rotation = Quaternion.Euler(invertRotation * rotationToApply.x, invertRotation * rotationToApply.y, invertRotation * rotationToApply.z);
+            obj.GetComponent<Transform>().rotation *= Quaternion.Euler(invertRotation * rotationToApply.x, invertRotation * rotationToApply.y, invertRotation * rotationToApply.z);
         }
 
     }
 
+    void SetScalingFunction()
+    {
+        Vector3 scaleToSet = new Vector3(scaleSetOptionValues[setIndex], scaleSetOptionValues[setIndex], scaleSetOptionValues[setIndex]);
+        foreach (GameObject obj in Selection.gameObjects)
+        {
+            obj.GetComponent<Transform>().localScale = scaleToSet;
+        }
     }
+    void MultScalingFunction()
+    {
+        foreach (GameObject obj in Selection.gameObjects)
+        {
+            obj.GetComponent<Transform>().localScale *= scaleMultiplyOptionValues[multIndex];
+        }
+    }
+
+}
